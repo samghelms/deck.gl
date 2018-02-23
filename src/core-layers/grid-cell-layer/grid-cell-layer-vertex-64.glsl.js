@@ -45,42 +45,29 @@ uniform float elevationScale;
 varying vec4 vColor;
 
 void main(void) {
-  vec4 instancePositions64xy = vec4(
-    instancePositions.x,
-    instancePositions64xyLow.x,
-    instancePositions.y,
-    instancePositions64xyLow.y);
+  float elevation = 0.0;
 
-  vec2 projected_coord_xy[2];
-  project_position_fp64(instancePositions64xy, projected_coord_xy);
+  if (extruded > 0.5) {
+    elevation = instancePositions.w * (positions.z + 1.0) *
+      ELEVATION_SCALE * elevationScale;
+  }
+
+  vec2 vertex[4];
+  project_position_fp64(vec3(instancePositions.xy, elevation), instancePositions64xyLow, vertex);
 
   // if ahpha == 0.0 or z < 0.0, do not render element
   float noRender = float(instanceColors.a == 0.0 || instancePositions.w < 0.0);
   float finalCellSize = cellSize * mix(1.0, 0.0, noRender);
 
-  projected_coord_xy[0] = sum_fp64(projected_coord_xy[0],
+  vertex[0] = sum_fp64(vertex[0],
     vec2((positions.x * coverage + 1.0) * finalCellSize / 2.0, 0.0));
-  projected_coord_xy[1] = sum_fp64(projected_coord_xy[1],
+  vertex[1] = sum_fp64(vertex[1],
     vec2((positions.y * coverage - 1.0) * finalCellSize / 2.0, 0.0));
+  vertex[2].x += 1.0;
 
-  float elevation = 0.0;
+  vec4 position_worldspace = vec4_from_fp64(vertex);
 
-  if (extruded > 0.5) {
-    elevation = project_scale(instancePositions.w  * (positions.z + 1.0) *
-      ELEVATION_SCALE * elevationScale) + 1.0;
-  }
-
-  vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = projected_coord_xy[0];
-  vertex_pos_modelspace[1] = projected_coord_xy[1];
-  vertex_pos_modelspace[2] = vec2(elevation, 0.0);
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
-
-  vec4 position_worldspace = vec4(
-    vertex_pos_modelspace[0].x, vertex_pos_modelspace[1].x,
-    vertex_pos_modelspace[2].x, vertex_pos_modelspace[3].x);
-
-  gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
+  gl_Position = project_to_clipspace_fp64(vertex);
 
   float lightWeight = 1.0;
 

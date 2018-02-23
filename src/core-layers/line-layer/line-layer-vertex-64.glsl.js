@@ -57,27 +57,14 @@ void main(void) {
     instanceTargetPositions.x, instanceSourceTargetPositions64xyLow.z,
     instanceTargetPositions.y, instanceSourceTargetPositions64xyLow.w);
 
-  vec2 projected_source_coord[2];
-  vec2 projected_target_coord[2];
+  vec2 projected_source[4];
+  vec2 projected_target[4];
 
-  project_position_fp64(instanceSourcePositions64, projected_source_coord);
-  project_position_fp64(instanceTargetPositions64, projected_target_coord);
+  project_position_fp64(instanceSourcePositions, instanceSourceTargetPositions64xyLow.xy, projected_source);
+  project_position_fp64(instanceTargetPositions, instanceSourceTargetPositions64xyLow.zw, projected_target);
 
-  vec2 source_pos_modelspace[4];
-  source_pos_modelspace[0] =  projected_source_coord[0];
-  source_pos_modelspace[1] =  projected_source_coord[1];
-  source_pos_modelspace[2] = vec2(project_scale(instanceSourcePositions.z), 0.0);
-  source_pos_modelspace[3] = vec2(1.0, 0.0);
-
-  vec4 source_pos_clipspace = project_to_clipspace_fp64(source_pos_modelspace);
-
-  vec2 target_pos_modelspace[4];
-  target_pos_modelspace[0] =  projected_target_coord[0];
-  target_pos_modelspace[1] =  projected_target_coord[1];
-  target_pos_modelspace[2] = vec2(project_scale(instanceTargetPositions.z), 0.0);
-  target_pos_modelspace[3] = vec2(1.0, 0.0);
-
-  vec4 target_pos_clipspace = project_to_clipspace_fp64(target_pos_modelspace);
+  vec4 source_pos_clipspace = project_to_clipspace_fp64(projected_source);
+  vec4 target_pos_clipspace = project_to_clipspace_fp64(projected_target);
 
   float segmentIndex = positions.x;
   vec4 p = mix(source_pos_clipspace, target_pos_clipspace, segmentIndex);

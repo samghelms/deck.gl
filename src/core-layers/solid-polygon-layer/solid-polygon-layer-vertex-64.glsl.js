@@ -35,22 +35,14 @@ uniform float opacity;
 varying vec4 vColor;
 
 void main(void) {
-  vec4 positions64xy = vec4(positions.x, positions64xyLow.x, positions.y, positions64xyLow.y);
 
-  vec2 projected_coord_xy[2];
-  project_position_fp64(positions64xy, projected_coord_xy);
+  vec2 vertex[4];
+  float z = positions.z * elevationScale;
+  project_position_fp64(vec3(positions.xy, z), positions64xyLow, vertex);
 
-  vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = projected_coord_xy[0];
-  vertex_pos_modelspace[1] = projected_coord_xy[1];
-  vertex_pos_modelspace[2] = vec2(project_scale(positions.z * elevationScale), 0.0);
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
+  gl_Position = project_to_clipspace_fp64(vertex);
 
-  gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
-
-  vec4 position_worldspace = vec4(
-    vertex_pos_modelspace[0].x, vertex_pos_modelspace[1].x,
-    vertex_pos_modelspace[2].x, vertex_pos_modelspace[3].x);
+  vec4 position_worldspace = vec4_from_fp64(vertex);
 
   float lightWeight = 1.0;
 

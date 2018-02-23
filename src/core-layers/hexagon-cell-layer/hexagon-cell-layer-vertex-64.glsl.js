@@ -59,8 +59,8 @@ void main(void) {
   float elevation = 0.0;
 
   if (extruded > 0.5) {
-    elevation = project_scale(instancePositions.z * (positions.y + 0.5) *
-      ELEVATION_SCALE * elevationScale);
+    elevation = instancePositions.z * (positions.y + 0.5) *
+      ELEVATION_SCALE * elevationScale;
   }
 
   // if alpha == 0.0 or z < 0.0, do not render element
@@ -68,26 +68,16 @@ void main(void) {
   float dotRadius = radius * mix(coverage, 0.0, noRender);
 
   // project center of hexagon
-
-  vec4 instancePositions64xy = vec4(
-    instancePositions.x, instancePositions64xyLow.x,
-    instancePositions.y, instancePositions64xyLow.y);
-
-  vec2 projected_coord_xy[2];
-  project_position_fp64(instancePositions64xy, projected_coord_xy);
+  vec2 center[4];
+  project_position_fp64(vec3(instancePositions.xy, elevation), instancePositions64xyLow, center);
 
   vec2 vertex_pos_localspace[4];
-  vec4_fp64(vec4(rotatedPositions.xz * dotRadius, 0.0, 1.0), vertex_pos_localspace);
+  vec4_fp64(vec4(rotatedPositions.xz * dotRadius, 0.0, 0.0), vertex_pos_localspace);
 
   vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = sum_fp64(vertex_pos_localspace[0], projected_coord_xy[0]);
-  vertex_pos_modelspace[1] = sum_fp64(vertex_pos_localspace[1], projected_coord_xy[1]);
-  vertex_pos_modelspace[2] = sum_fp64(vertex_pos_localspace[2], vec2(elevation, 0.0));
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
+  vec4_sum_fp64(center, vertex_pos_localspace, vertex_pos_modelspace);
 
-  vec4 position_worldspace = vec4(
-    vertex_pos_modelspace[0].x, vertex_pos_modelspace[1].x,
-    vertex_pos_modelspace[2].x, vertex_pos_modelspace[3].x);
+  vec4 position_worldspace = vec4_from_fp64(vertex_pos_modelspace);
 
   gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
 

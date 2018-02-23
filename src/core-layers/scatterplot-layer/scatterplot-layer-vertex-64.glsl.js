@@ -57,23 +57,15 @@ void main(void) {
   // 0 - solid circle, 1 - stroke with lineWidth=0
   innerUnitRadius = outline * (1.0 - strokeWidth / outerRadiusPixels);
 
-  vec4 instancePositions64xy = vec4(
-    instancePositions.x, instancePositions64xyLow.x,
-    instancePositions.y, instancePositions64xyLow.y);
-
-  vec2 projected_coord_xy[2];
-  project_position_fp64(instancePositions64xy, projected_coord_xy);
+  // Find the center of the point and add the current vertex
+  vec2 center[4];
+  project_position_fp64(instancePositions, instancePositions64xyLow, center);
 
   vec2 vertex_pos_localspace[4];
   vec4_fp64(vec4(positions * outerRadiusPixels, 0.0), vertex_pos_localspace);
 
   vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = sum_fp64(vertex_pos_localspace[0], projected_coord_xy[0]);
-  vertex_pos_modelspace[1] = sum_fp64(vertex_pos_localspace[1], projected_coord_xy[1]);
-  vertex_pos_modelspace[2] = sum_fp64(vertex_pos_localspace[2],
-    vec2(project_scale(instancePositions.z), 0.0));
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
-
+  vec4_sum_fp64(center, vertex_pos_localspace, vertex_pos_modelspace);
   gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
 
   vColor = vec4(instanceColors.rgb, instanceColors.a * opacity) / 255.;

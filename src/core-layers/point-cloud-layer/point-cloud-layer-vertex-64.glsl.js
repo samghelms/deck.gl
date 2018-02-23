@@ -39,25 +39,13 @@ void main(void) {
   // position on the containing square in [-1, 1] space
   unitPosition = positions.xy;
 
-  vec4 instancePositions64xy = vec4(
-    instancePositions.x, instancePositions64xyLow.x,
-    instancePositions.y, instancePositions64xyLow.y);
+  vec2 center[2];
+  project_position_fp64(instancePositions, instancePositions64xyLow, center);
 
-  vec2 projected_coord_xy[2];
-  project_position_fp64(instancePositions64xy, projected_coord_xy);
-
-  vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = projected_coord_xy[0];
-  vertex_pos_modelspace[1] = projected_coord_xy[1];
-  vertex_pos_modelspace[2] = vec2(project_scale(instancePositions.z), 0.0);
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
-
-  gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
+  gl_Position = project_to_clipspace_fp64(center);
   gl_Position += project_pixel_to_clipspace(positions.xy * radiusPixels);
 
-  vec4 position_worldspace = vec4(
-    projected_coord_xy[0].x, projected_coord_xy[1].x,
-    project_scale(instancePositions.z), 1.0);
+  vec4 position_worldspace = vec4_from_fp64(center);
 
   // Apply lighting
   float lightWeight = getLightWeight(position_worldspace.xyz, // the w component is always 1.0

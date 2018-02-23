@@ -49,6 +49,28 @@ void project_position_fp64(vec4 position_fp64, out vec2 out_val[2]) {
   return;
 }
 
+void project_position_fp64(vec2 position, vec2 position64xyLow, out vec2 out_val[2]) {
+  vec4 position64xy = vec4(
+    position.x, position64xyLow.x,
+    position.y, position64xyLow.y);
+
+  project_position_fp64(position64xy, out_val);
+}
+
+void project_position_fp64(vec3 position, vec2 position64xyLow, out vec2 out_val[4]) {
+  vec2 projected_coord_xy[2];
+  project_position_fp64(position.xy, position64xyLow, projected_coord_xy);
+
+  out_val[0] = projected_coord_xy[0];
+  out_val[1] = projected_coord_xy[1];
+  out_val[2] = vec2(project_scale(position.z), 0.0);
+  out_val[3] = vec2(1.0, 0.0);
+}
+
+vec4 vec4_from_fp64(vec2 pos[4]) {
+  return vec4(pos[0].x, pos[1].x, pos[2].x, pos[3].x);
+}
+
 vec4 project_to_clipspace_fp64(vec2 vertex_pos_modelspace[4]) {
   vec2 vertex_pos_clipspace[4];
   mat4_vec4_mul_fp64(project_uViewProjectionMatrixFP64, vertex_pos_modelspace,

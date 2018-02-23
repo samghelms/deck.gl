@@ -58,20 +58,10 @@ void main(void) {
   pixelOffset = rotate_by_angle(pixelOffset, instanceAngles) * sizeScale * instanceScale;
   pixelOffset.y *= -1.0;
 
-  vec4 instancePositions64xy = vec4(
-    instancePositions.x, instancePositions64xyLow.x,
-    instancePositions.y, instancePositions64xyLow.y);
+  vec2 center[4];
+  project_position_fp64(instancePositions, instancePositions64xyLow, center);
 
-  vec2 projected_coord_xy[2];
-  project_position_fp64(instancePositions64xy, projected_coord_xy);
-
-  vec2 vertex_pos_modelspace[4];
-  vertex_pos_modelspace[0] = projected_coord_xy[0];
-  vertex_pos_modelspace[1] = projected_coord_xy[1];
-  vertex_pos_modelspace[2] = vec2(project_scale(instancePositions.z), 0.0);
-  vertex_pos_modelspace[3] = vec2(1.0, 0.0);
-
-  gl_Position = project_to_clipspace_fp64(vertex_pos_modelspace);
+  gl_Position = project_to_clipspace_fp64(center);
   gl_Position += project_pixel_to_clipspace(pixelOffset);
 
   vTextureCoords = mix(
