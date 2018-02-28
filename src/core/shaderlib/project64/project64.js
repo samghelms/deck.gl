@@ -30,12 +30,6 @@ export default {
   dependencies: [project, fp64],
   vs: project64Shader,
   getUniforms,
-  fp64ifyShader: source => {
-    return source.replace(
-      /\bproject_position_to_clipspace\b/g,
-      'project_position_to_clipspace_fp64'
-    );
-  },
   deprecations: [
     {type: 'uniform vec2', old: 'projectionFP64[16]', new: 'project_uViewProjectionMatrixFP64'},
     {type: 'uniform vec2', old: 'projectionScaleFP64', new: 'project64_uScale'}

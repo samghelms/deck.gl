@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-import {COORDINATE_SYSTEM, Layer, experimental, project64} from '../../core';
+import {Layer, experimental} from '../../core';
 const {fp64LowPart, enable64bitSupport} = experimental;
 import {GL, Model, Geometry} from 'luma.gl';
 
@@ -40,15 +40,8 @@ const defaultProps = {
 
 export default class PointCloudLayer extends Layer {
   getShaders(id) {
-    const {shaderCache} = this.context;
-    return enable64bitSupport(this.props)
-      ? {
-          vs: project64.fp64ifyShader(vs),
-          fs,
-          modules: ['project64', 'lighting', 'picking'],
-          shaderCache
-        }
-      : {vs, fs, modules: ['lighting', 'picking'], shaderCache}; // 'project' module added by default.
+    const projectModule = enable64bitSupport(this.props) ? 'project64' : 'project32';
+    return {vs, fs, modules: [projectModule, 'lighting', 'picking']};
   }
 
   initializeState() {

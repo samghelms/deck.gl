@@ -69,7 +69,7 @@ vec4 project_to_clipspace_fp64(vec2 vertex_pos_modelspace[4]) {
     );
 }
 
-vec4 project_position_to_clipspace_fp64(
+vec4 project_position_to_clipspace(
   vec3 position, vec2 position64xyLow, vec3 offset, out vec4 worldPosition
 ) {
   // This is the local offset to the instance position
@@ -93,11 +93,11 @@ vec4 project_position_to_clipspace_fp64(
   return project_to_clipspace_fp64(worldPosition64);
 }
 
-vec4 project_position_to_clipspace_fp64(
+vec4 project_position_to_clipspace(
   vec3 position, vec2 position64xyLow, vec3 offset
 ) {
   vec4 worldPosition;
-  return project_position_to_clipspace_fp64(
+  return project_position_to_clipspace(
     position, position64xyLow, offset, worldPosition
   );
 }
