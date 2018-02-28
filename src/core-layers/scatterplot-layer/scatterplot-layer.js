@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-import {COORDINATE_SYSTEM, Layer, experimental} from '../../core';
+import {COORDINATE_SYSTEM, Layer, experimental, project64} from '../../core';
 const {fp64LowPart, enable64bitSupport} = experimental;
 import {GL, Model, Geometry} from 'luma.gl';
 
 import vs from './scatterplot-layer-vertex.glsl';
-import vs64 from './scatterplot-layer-vertex-64.glsl';
 import fs from './scatterplot-layer-fragment.glsl';
 
 const DEFAULT_COLOR = [0, 0, 0, 255];
@@ -45,7 +44,7 @@ export default class ScatterplotLayer extends Layer {
   getShaders(id) {
     const {shaderCache} = this.context;
     return enable64bitSupport(this.props)
-      ? {vs: vs64, fs, modules: ['project64', 'picking'], shaderCache}
+      ? {vs: project64.fp64ifyShader(vs), fs, modules: ['project64', 'picking'], shaderCache}
       : {vs, fs, modules: ['picking'], shaderCache}; // 'project' module added by default.
   }
 
@@ -57,6 +56,11 @@ export default class ScatterplotLayer extends Layer {
         transition: true,
         accessor: 'getPosition',
         update: this.calculateInstancePositions
+      },
+      instancePositions64xyLow: {
+        size: 2,
+        accessor: 'getPosition',
+        update: this.calculateInstancePositions64xyLow
       },
       instanceRadius: {
         size: 1,
@@ -76,32 +80,13 @@ export default class ScatterplotLayer extends Layer {
     /* eslint-enable max-len */
   }
 
-  updateAttribute({props, oldProps, changeFlags}) {
-    if (props.fp64 !== oldProps.fp64) {
-      const attributeManager = this.getAttributeManager();
-      attributeManager.invalidateAll();
-
-      if (props.fp64 && props.coordinateSystem === COORDINATE_SYSTEM.LNGLAT) {
-        attributeManager.addInstanced({
-          instancePositions64xyLow: {
-            size: 2,
-            accessor: 'getPosition',
-            update: this.calculateInstancePositions64xyLow
-          }
-        });
-      } else {
-        attributeManager.remove(['instancePositions64xyLow']);
-      }
-    }
-  }
-
   updateState({props, oldProps, changeFlags}) {
     super.updateState({props, oldProps, changeFlags});
     if (props.fp64 !== oldProps.fp64) {
       const {gl} = this.context;
       this.setState({model: this._getModel(gl)});
+      this.state.attributeManager.invalidateAll();
     }
-    this.updateAttribute({props, oldProps, changeFlags});
   }
 
   draw({uniforms}) {
@@ -150,6 +135,14 @@ export default class ScatterplotLayer extends Layer {
   }
 
   calculateInstancePositions64xyLow(attribute) {
+    const isFP64 = enable64bitSupport(this.props);
+    attribute.isGeneric = !isFP64;
+
+    if (!isFP64) {
+      attribute.value = new Float32Array(2);
+      return;
+    }
+
     const {data, getPosition} = this.props;
     const {value} = attribute;
     let i = 0;

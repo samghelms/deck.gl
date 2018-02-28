@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-import {COORDINATE_SYSTEM, Layer, experimental} from '../../core';
+import {COORDINATE_SYSTEM, Layer, experimental, project64} from '../../core';
 const {fp64LowPart, enable64bitSupport} = experimental;
 import {GL, Model, Geometry} from 'luma.gl';
 
 import vs from './line-layer-vertex.glsl';
-import vs64 from './line-layer-vertex-64.glsl';
 import fs from './line-layer-fragment.glsl';
 
 const DEFAULT_COLOR = [0, 0, 0, 255];
@@ -40,7 +39,7 @@ const defaultProps = {
 export default class LineLayer extends Layer {
   getShaders() {
     return enable64bitSupport(this.props)
-      ? {vs: vs64, fs, modules: ['project64', 'picking']}
+      ? {vs: project64.fp64ifyShader(vs), fs, modules: ['project64', 'picking']}
       : {vs, fs, modules: ['picking']}; // 'project' module added by default.
   }
 
@@ -61,6 +60,11 @@ export default class LineLayer extends Layer {
         accessor: 'getTargetPosition',
         update: this.calculateInstanceTargetPositions
       },
+      instanceSourceTargetPositions64xyLow: {
+        size: 4,
+        accessor: ['getSourcePosition', 'getTargetPosition'],
+        update: this.calculateInstanceSourceTargetPositions64xyLow
+      },
       instanceColors: {
         size: 4,
         type: GL.UNSIGNED_BYTE,
@@ -72,33 +76,14 @@ export default class LineLayer extends Layer {
     /* eslint-enable max-len */
   }
 
-  updateAttribute({props, oldProps, changeFlags}) {
-    if (props.fp64 !== oldProps.fp64) {
-      const attributeManager = this.getAttributeManager();
-      attributeManager.invalidateAll();
-
-      if (props.fp64 && props.coordinateSystem === COORDINATE_SYSTEM.LNGLAT) {
-        attributeManager.addInstanced({
-          instanceSourceTargetPositions64xyLow: {
-            size: 4,
-            accessor: ['getSourcePosition', 'getTargetPosition'],
-            update: this.calculateInstanceSourceTargetPositions64xyLow
-          }
-        });
-      } else {
-        attributeManager.remove(['instanceSourceTargetPositions64xyLow']);
-      }
-    }
-  }
-
   updateState({props, oldProps, changeFlags}) {
     super.updateState({props, oldProps, changeFlags});
 
     if (props.fp64 !== oldProps.fp64) {
       const {gl} = this.context;
       this.setState({model: this._getModel(gl)});
+      this.state.attributeManager.invalidateAll();
     }
-    this.updateAttribute({props, oldProps, changeFlags});
   }
 
   draw({uniforms}) {
@@ -164,6 +149,14 @@ export default class LineLayer extends Layer {
   }
 
   calculateInstanceSourceTargetPositions64xyLow(attribute) {
+    const isFP64 = enable64bitSupport(this.props);
+    attribute.isGeneric = !isFP64;
+
+    if (!isFP64) {
+      attribute.value = new Float32Array(4);
+      return;
+    }
+
     const {data, getSourcePosition, getTargetPosition} = this.props;
     const {value, size} = attribute;
     let i = 0;

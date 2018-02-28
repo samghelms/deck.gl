@@ -143,4 +143,19 @@ vec4 project_pixel_to_clipspace(vec2 pixels) {
   vec2 offset = pixels / project_uViewportSize * project_uDevicePixelRatio;
   return vec4(offset * project_uFocalDistance, 0.0, 0.0);
 }
+
+vec4 project_position_to_clipspace(
+  vec3 position, vec2 position64xyLow, vec3 offset, out vec4 worldPosition
+) {
+  vec3 projectedPosition = project_position(position);
+  worldPosition = vec4(projectedPosition + offset, 1.0);
+  return project_to_clipspace(worldPosition);
+}
+
+vec4 project_position_to_clipspace(
+  vec3 position, vec2 position64xyLow, vec3 offset
+) {
+  vec4 worldPosition;
+  return project_position_to_clipspace(position, position64xyLow, offset, worldPosition);
+}
 `;
